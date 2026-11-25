@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><title>Energieprijzen</title>
+<style>
+:root{--status-bar-color:var(--background-color-default,#fff)}
+body{margin:0;padding:20px;background:var(--background-color-default,#fff);color:var(--text-color-default,#1f2328);font-family:var(--font-sans,system-ui,sans-serif);font-size:14px}
+h1{margin:0 0 4px;font-size:24px}h2{font-size:16px;margin:0 0 12px}
+.sub{color:var(--text-color-muted,#656d76);margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.card{border:1px solid var(--border-color-default,#d0d7de);border-radius:8px;padding:14px}
+.card .l{color:var(--text-color-muted,#656d76);font-size:12px}
+.card .v{font-size:26px;font-weight:600;margin:4px 0}
+.up{color:#cf222e}.down{color:#1a7f37}
+.panel{border:1px solid var(--border-color-default,#d0d7de);border-radius:8px;padding:16px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--border-color-default,#d0d7de)}
+th:first-child,td:first-child{text-align:left}tr.t td{font-weight:600}tr.s td{background:rgba(128,128,128,.1);font-weight:600;text-align:left}
+input{width:100%;box-sizing:border-box;text-align:right;padding:4px 6px;border:1px solid var(--border-color-default,#d0d7de);border-radius:6px;background:var(--background-color-default,#fff);color:inherit;font:inherit}
+input.nm{text-align:left;font-weight:600}
+button{padding:6px 12px;border:1px solid var(--border-color-default,#d0d7de);border-radius:6px;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.row{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin:8px 0}
+.bar{display:flex;height:28px}.bar div{height:100%}
+.tip{font-size:12px;color:var(--text-color-muted,#656d76)}
+</style></head><body>
+<h1>Nederlandse energieprijzen</h1>
+<div class="sub">Vul tarieven en verbruik in; alle bedragen worden direct herberekend. Wijzigingen blijven bewaard in deze browser. <button id="add">+ Scenario</button> <button id="reset">Reset naar Excel-waarden</button></div>
+<div class="panel"><h2>Verbruik (voor alle scenario's)</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"><label>Stroom piek (kWh)<input type="number" step="any" id="vp"></label><label>Stroom dal (kWh)<input type="number" step="any" id="vd"></label><label>Gas (m³)<input type="number" step="any" id="vg"></label></div></div>
+<div class="panel"><h2>Invoer</h2><table id="inp"></table></div>
+<div class="grid" id="cards"></div>
+<div class="panel"><h2>Jaarkosten opbouw per scenario (€)</h2><div id="chart"></div><div class="legend" id="legend"></div></div>
+<div class="panel"><h2>Berekening</h2><table id="tbl"></table></div>
+<script>
+const mk=(n,piek,dal,gas,fs,fg,kort,ng=266.39,eb=-628.96)=>({n,piek,dal,gas,fs,fg,ns:475.92,ng,eb,kort});
+const DEF=[
+mk('Budget contract 3-10-25',.2511,.2511,1.1933,8.99,8.99,-415,246.09,-635.19),
+mk('Budget prijs 1-1-26',.23904,.23904,1.22043,8.99,8.99,-415),
+mk('Essent contract 30-10',.3693,.3668,1.9409,11.7,7.99,-470),
+mk('Gaslicht aanbod 9-11',.3356,.3331,1.8217,11.7,7.99,-370),
+mk('Gaslicht aanbod 16-11',.3356,.3331,1.8217,11.7,7.99,-410),
+mk('Gaslicht budget 29-10',.31165,.31165,1.81107,8.99,8.99,-150),
+mk('Gaslicht budget tel. 29-10',.33045,.3305,1.8907,8.99,8.99,-60),
+mk('Budget variabel',.41,.41,1.99,8.99,8.99,0),
+mk('Tikker',.27085,.27085,1.48575,6.99,5.99,-180),
+mk('En Direct 16-11',.3141,.3116,1.7853,10.39,7.49,-310),
+mk('Essent 1 jr vast 22-11',.3356,.3331,1.8217,11.7,7.99,-430),
+mk('VEH Mega 1 jr vast 22-11',.33846,.31048,1.70269,3.53,3.53,-200),
+mk('Gaslicht 1 jr vast 22-11',.315,.315,1.7523,8.99,7.99,-290),
+mk('Vattenfall 1 jr vast 22-11',.310634,.310634,1.771174,8.99,7.99,0)];
+const DV={vp:2000,vd:0,vg:1200};
+const KEY='energie-scenarios-v2';
+let S;try{S=JSON.parse(localStorage.getItem(KEY))||null}catch(x){S=null}
+if(!Array.isArray(S)||!S.length)S=JSON.parse(JSON.stringify(DEF));
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem(KEY+'-v',JSON.stringify(V))}catch(x){}};
+let V;try{V=JSON.parse(localStorage.getItem(KEY+'-v'))}catch(x){}
+if(!V)V=Object.assign({},DV);
+const e=v=>'€ '+v.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
+const n=(v,d=1)=>v.toLocaleString('nl-NL',{minimumFractionDigits:d,maximumFractionDigits:d});
+function calc(s){const c={};c.tp=s.piek*V.vp+s.dal*V.vd;c.vs=s.fs*12;c.ns=s.ns;c.eb=s.eb;
+c.stroom=c.tp+c.vs+c.ns+c.eb;c.tg=s.gas*V.vg;c.vgv=s.fg*12;c.ng=s.ng;c.gasT=c.tg+c.vgv+c.ng;
+c.tot=c.stroom+c.gasT;c.jaar=c.tot+s.kort;return c}
+const F=[
+['Tarieven',0],['Stroom piek (€/kWh)','piek'],['Stroom dal (€/kWh)','dal'],['Gas (€/m³)','gas'],['Vast stroom (€/mnd)','fs'],['Vast gas (€/mnd)','fg'],
+['Vaste bedragen per jaar',0],['Netwerk stroom (€)','ns'],['Netwerk gas (€)','ng'],['Energiebelasting/teruggave (€, negatief)','eb'],['Korting (€, negatief)','kort']];
+function buildInputs(){
+document.getElementById('inp').innerHTML='<tr><th></th>'+S.map((s,i)=>'<th style="min-width:130px"><input class="nm" data-i="'+i+'" data-k="n" value="'+s.n.replace(/"/g,'&quot;')+'"><div style="margin-top:4px"><button data-act="dup" data-i="'+i+'" title="Kopieer scenario">Kopieer</button> <button data-act="del" data-i="'+i+'" title="Verwijder scenario"'+(S.length<2?' disabled':'')+'>✕</button></div></th>').join('')+'</tr>'+
+F.map(f=>f[1]===0?'<tr class="s"><td colspan="'+(S.length+1)+'">'+f[0]+'</td></tr>':'<tr><td>'+f[0]+'</td>'+S.map((s,i)=>'<td><input type="number" step="any" data-i="'+i+'" data-k="'+f[1]+'" value="'+s[f[1]]+'"></td>').join('')+'</tr>').join('');
+document.querySelectorAll('#inp input').forEach(el=>el.oninput=()=>{const k=el.dataset.k,i=+el.dataset.i;
+if(k==='n')S[i].n=el.value;else{const v=parseFloat(el.value);S[i][k]=isNaN(v)?0:v}save();render()});
+document.querySelectorAll('#inp button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;
+if(b.dataset.act==='dup')S.splice(i+1,0,Object.assign({},S[i],{n:S[i].n+' (kopie)'}));
+else if(S.length>1)S.splice(i,1);
+save();buildInputs();render()})}
+document.getElementById('add').onclick=()=>{S.push(Object.assign({},S[S.length-1],{n:'Nieuw scenario '+(S.length+1)}));save();buildInputs();render()};
+const C=[['Stroom variabel','tp','#0969da'],['Stroom vast','vs','#54aeff'],['Netwerk stroom','ns','#8250df'],['Gas variabel','tg','#bc4c00'],['Gas vast','vgv','#fb8f44'],['Netwerk gas','ng','#bf3989']];
+function render(){
+const R=S.map(calc),base=R[0];
+document.getElementById('cards').innerHTML=S.map((s,i)=>{const d=R[i].jaar-base.jaar,p=base.jaar?d/base.jaar*100:0;
+return '<div class="card"><div class="l">'+s.n+'</div><div class="v">'+e(R[i].jaar)+'</div><div class="l">'+(i?'<span class="'+(d>0?'up':'down')+'">'+(d>0?'▲ ':'▼ ')+e(Math.abs(d))+' ('+n(p)+'%)</span> t.o.v. '+S[0].n:'per jaar, na korting')+'</div><div class="l">≈ '+e(R[i].jaar/12)+' p.m.</div></div>'}).join('');
+const max=Math.max(1,...R.map(c=>C.reduce((a,x)=>a+Math.max(0,c[x[1]]),0)))*1.02;
+document.getElementById('chart').innerHTML=S.map((s,i)=>{const c=R[i];return '<div class="row"><div>'+s.n+'<div class="tip">na korting: '+e(c.jaar)+'</div></div><div><div class="bar">'+C.map(x=>'<div title="'+x[0]+': '+e(c[x[1]])+'" style="width:'+(Math.max(0,c[x[1]])/max*100)+'%;background:'+x[2]+'"></div>').join('')+'</div><div class="tip">Netto '+e(c.tot)+' (incl. energiebelasting '+e(s.eb)+'), korting '+e(s.kort)+'</div></div></div>'}).join('');
+document.getElementById('legend').innerHTML=C.map(x=>'<span><i style="background:'+x[2]+'"></i>'+x[0]+'</span>').join('');
+const T=[['STROOM',0,2],['Variabel',c=>c.tp],['Vast',c=>c.vs],['Netwerk',c=>c.ns],['Energiebelasting',c=>c.eb],['Totaal stroom',c=>c.stroom,1],
+['GAS',0,2],['Variabel',c=>c.tg],['Vast',c=>c.vgv],['Netwerk',c=>c.ng],['Totaal gas',c=>c.gasT,1],
+['TOTAAL',0,2],['Totaal verbruik',c=>c.tot],['Korting',(c,s)=>s.kort],['Totaal per jaar',c=>c.jaar,1],['Per maand',c=>c.jaar/12]];
+document.getElementById('tbl').innerHTML='<tr><th></th>'+S.map(s=>'<th>'+s.n+'</th>').join('')+'</tr>'+T.map(r=>r[2]==2?'<tr class="s"><td colspan="'+(S.length+1)+'">'+r[0]+'</td></tr>':'<tr'+(r[2]?' class="t"':'')+'><td>'+r[0]+'</td>'+S.map((s,i)=>'<td>'+e(r[1](R[i],s))+'</td>').join('')+'</tr>').join('')}
+['vp','vd','vg'].forEach(k=>{const el=document.getElementById(k);el.value=V[k];el.oninput=()=>{const v=parseFloat(el.value);V[k]=isNaN(v)?0:v;save();render()}});
+document.getElementById('reset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));V=Object.assign({},DV);['vp','vd','vg'].forEach(k=>document.getElementById(k).value=V[k]);save();buildInputs();render()};
+buildInputs();render();
+</script></body></html>
