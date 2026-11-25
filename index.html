@@ -1,88 +1,425 @@
 <!doctype html>
-<html lang="nl"><head><meta charset="utf-8"><title>Energieprijzen</title>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#11183d">
+<title>Talentlab | Dynamics 365 CE assessment</title>
 <style>
-:root{--status-bar-color:var(--background-color-default,#fff)}
-body{margin:0;padding:20px;background:var(--background-color-default,#fff);color:var(--text-color-default,#1f2328);font-family:var(--font-sans,system-ui,sans-serif);font-size:14px}
-h1{margin:0 0 4px;font-size:24px}h2{font-size:16px;margin:0 0 12px}
-.sub{color:var(--text-color-muted,#656d76);margin-bottom:20px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
-.card{border:1px solid var(--border-color-default,#d0d7de);border-radius:8px;padding:14px}
-.card .l{color:var(--text-color-muted,#656d76);font-size:12px}
-.card .v{font-size:26px;font-weight:600;margin:4px 0}
-.up{color:#cf222e}.down{color:#1a7f37}
-.panel{border:1px solid var(--border-color-default,#d0d7de);border-radius:8px;padding:16px;margin-bottom:20px}
-table{width:100%;border-collapse:collapse}th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--border-color-default,#d0d7de)}
-th:first-child,td:first-child{text-align:left}tr.t td{font-weight:600}tr.s td{background:rgba(128,128,128,.1);font-weight:600;text-align:left}
-input{width:100%;box-sizing:border-box;text-align:right;padding:4px 6px;border:1px solid var(--border-color-default,#d0d7de);border-radius:6px;background:var(--background-color-default,#fff);color:inherit;font:inherit}
-input.nm{text-align:left;font-weight:600}
-button{padding:6px 12px;border:1px solid var(--border-color-default,#d0d7de);border-radius:6px;background:transparent;color:inherit;cursor:pointer;font:inherit}
-.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px}.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
-.row{display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin:8px 0}
-.bar{display:flex;height:28px}.bar div{height:100%}
-.tip{font-size:12px;color:var(--text-color-muted,#656d76)}
-</style></head><body>
-<h1>Nederlandse energieprijzen</h1>
-<div class="sub">Vul tarieven en verbruik in; alle bedragen worden direct herberekend. Wijzigingen blijven bewaard in deze browser. <button id="add">+ Scenario</button> <button id="reset">Reset naar Excel-waarden</button></div>
-<div class="panel"><h2>Verbruik (voor alle scenario's)</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"><label>Stroom piek (kWh)<input type="number" step="any" id="vp"></label><label>Stroom dal (kWh)<input type="number" step="any" id="vd"></label><label>Gas (m³)<input type="number" step="any" id="vg"></label></div></div>
-<div class="panel"><h2>Invoer</h2><table id="inp"></table></div>
-<div class="grid" id="cards"></div>
-<div class="panel"><h2>Jaarkosten opbouw per scenario (€)</h2><div id="chart"></div><div class="legend" id="legend"></div></div>
-<div class="panel"><h2>Berekening</h2><table id="tbl"></table></div>
+  @font-face { font-family: Barlow; font-style: normal; font-weight: 400; font-display: swap; src: url("https://fonts.gstatic.com/s/barlow/v13/7cHpv4kjgoGqM7EPCw.ttf") format("truetype"); }
+  @font-face { font-family: Barlow; font-style: normal; font-weight: 600; font-display: swap; src: url("https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E30-8c4A.ttf") format("truetype"); }
+  @font-face { font-family: Barlow; font-style: normal; font-weight: 700; font-display: swap; src: url("https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3t-4c4A.ttf") format("truetype"); }
+  @font-face { font-family: "Libre Baskerville"; font-style: normal; font-weight: 400; font-display: swap; src: url("https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQ.ttf") format("truetype"); }
+  :root { font-family: Barlow, "Segoe UI", sans-serif; font-size: 16px; color: #070d0d; background: #fff; color-scheme: light; --panel: #fff; --border: #dce0ec; --muted: #566079; --accent: #2449b5; --soft: #f0f2f9; --code: #f0f2f9; --navy: #11183d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; line-height: 1.6; }
+  button, input, select, textarea { font: inherit; }
+  button, select { cursor: pointer; }
+  button, input, select, textarea { border: 1px solid var(--border); border-radius: 4px; padding: 11px 16px; color: inherit; background: var(--panel); }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  :focus-visible { outline: 3px solid #6c8ce7; outline-offset: 3px; }
+  a { color: var(--accent); }
+  .shell { max-width: 1200px; margin: auto; padding: 30px 32px 60px; }
+  header, .row, .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header { justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 25px; margin-bottom: 30px; }
+  .brand { font-size: 28px; font-weight: 700; letter-spacing: -1px; color: var(--navy); }
+  .brand span { color: var(--accent); }
+  .eyebrow { text-transform: uppercase; letter-spacing: 1.8px; font-size: 11px; font-weight: 700; color: var(--accent); }
+  h1, h2 { font-family: "Libre Baskerville", Georgia, serif; font-weight: 400; }
+  h1 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -1px; line-height: 1.3; margin: 12px 0 20px; }
+  h2 { font-size: 25px; line-height: 1.4; margin: 6px 0 20px; }
+  h3 { font-size: 16px; }
+  p { margin: 0 0 14px; }
+  .muted, small { color: var(--muted); }
+  small { font-size: 12px; }
+  .primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; padding: 12px 23px; }
+  .primary:hover:not(:disabled) { background: #19388f; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 30px; margin: 22px 0; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 28px 0 35px; }
+  .level { position: relative; text-align: left; padding: 25px; line-height: 1.6; border-top: 4px solid #cbd3eb; background: var(--soft); }
+  .level::after { content: "\2197"; display: block; color: var(--accent); font-size: 25px; margin-top: 14px; }
+  .level strong { display: block; font-family: "Libre Baskerville", Georgia, serif; font-weight: 400; font-size: 26px; margin: 12px 0; }
+  .level[aria-pressed="true"] { border-color: var(--accent); background: #e8edf9; box-shadow: inset 0 0 0 1px var(--accent); }
+  .hero { position: relative; overflow: hidden; background: var(--navy); color: #fff; padding: 50px 42px; margin-bottom: 28px; }
+  .hero::after { content: ""; position: absolute; width: 250px; height: 300px; border: 1px solid #ffffff24; right: -120px; top: -50px; transform: rotate(30deg); pointer-events: none; }
+  .hero h1 { max-width: 740px; }
+  .hero .eyebrow { color: #b7c8ff; }
+  .hero .muted { color: #dce3f7; max-width: 650px; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 9px 22px; color: #c3cce4; font-size: 13px; margin-top: 26px; }
+  #home > .card:nth-of-type(even) { background: var(--soft); }
+  label { display: block; font-weight: 600; margin-bottom: 8px; }
+  input[type="text"], textarea { width: 100%; }
+  textarea { min-height: 230px; resize: vertical; font-weight: 400; line-height: 1.6; }
+  .code { font-family: Consolas, monospace; font-size: 13px; tab-size: 4; background: var(--code); min-height: 310px; white-space: pre; }
+  .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+  nav { position: sticky; top: 20px; }
+  nav button { display: block; width: 100%; text-align: left; margin-bottom: 7px; padding: 10px; font-size: 12px; }
+  nav button[aria-current="step"] { border-color: var(--accent); background: var(--soft); }
+  .status { padding: 12px 16px; border-radius: 4px; border-left: 3px solid var(--accent); background: var(--soft); font-size: 13px; margin: 14px 0; }
+  #message { position: sticky; top: 0; z-index: 3; }
+  #message:empty { display: none; }
+  .pill { font-size: 11px; border-radius: 4px; background: var(--soft); color: var(--accent); padding: 6px 10px; font-weight: 600; }
+  progress { width: 100%; accent-color: var(--accent); height: 7px; }
+  .choice { display: flex; gap: 12px; border: 1px solid var(--border); padding: 15px; border-radius: 4px; font-weight: 400; cursor: pointer; }
+  .choice:has(input:checked) { background: var(--soft); border-color: var(--accent); }
+  .choice input { margin-top: 6px; flex-shrink: 0; }
+  .actions { justify-content: space-between; margin-top: 22px; }
+  pre { background: var(--code); padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 13px; }
+  ul { padding-left: 21px; }
+  .review-item { border-top: 1px solid var(--border); padding-top: 22px; margin-top: 22px; }
+  .review-item textarea { min-height: 80px; }
+  .review-item input[type="number"] { width: 95px; }
+  .review-answer { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 400px; overflow: auto; }
+  details { margin: 14px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  .score { font-size: 42px; font-weight: 700; letter-spacing: -1px; }
+  .saved-item { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--border); }
+  .saved-item button { flex-shrink: 0; }
+  [hidden] { display: none !important; }
+  footer { border-top: 1px solid var(--border); padding-top: 24px; }
+  @media (max-width: 720px) { .shell { padding: 20px 16px; } .grid, .layout { grid-template-columns: 1fr; } nav { position: static; display: flex; gap: 6px; overflow-x: auto; min-width: 0; } nav button { min-width: 115px; } .card { padding: 20px; } .hero { padding: 32px 24px; } .saved-item { flex-wrap: wrap; } }
+  @media print { header button, nav, .actions, #message, #home, #candidate-view { display: none !important; } .shell { padding: 0; } .card { break-inside: avoid; } .review-answer { max-height: none; } details > * { display: block !important; } }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header><div><div class="brand">talent<span>lab.</span></div><small>Techniek begrijpen. Keuzes onderbouwen.</small></div><div class="row"><button id="home-button">Overzicht</button><button id="export-button" disabled>Exporteer dossier</button><label style="margin:0"><span class="pill">Lokaal · begeleide afname</span></label></div></header>
+  <div id="message" class="status" role="status" aria-live="polite"></div>
+  <section id="home">
+    <div class="hero">
+      <div class="eyebrow">Jouw avontuur · Technisch assessment</div>
+      <h1>Ruimte voor<br>technisch talent.</h1>
+      <p class="muted">Drie assessments voor Technical Consultants. Van solide basiskennis tot integratiearchitectuur en technisch leiderschap.</p>
+      <div class="hero-meta"><span>Dynamics 365 CE</span><span>.NET / C# / Azure</span><span>Junior · Medior · Senior</span></div>
+    </div>
+    <div class="grid" id="levels"></div>
+    <div class="card">
+      <h2>Start een nieuwe afname</h2>
+      <label for="candidate">Kandidaatcode</label><input id="candidate" type="text" maxlength="80" placeholder="Bijvoorbeeld K-2026-014 (geen naam nodig)" autocomplete="off">
+      <p class="muted" id="selection" style="margin-top:12px"></p>
+      <button class="primary" id="start-button">Start assessment</button>
+      <details><summary>Werkwijze en spelregels</summary>
+        <p>Per niveau: 4 meerkeuzevragen (20 punten), 2 code-opgaven (40 punten) en 4 open vragen (40 punten). Totaal: 100 punten. De tijd is een richtlijn, geen automatische deadline.</p>
+        <p>Gebruik van Microsoft Learn en taalreferenties is toegestaan; generatieve AI en hulp van anderen niet, tenzij de beoordelaar vooraf voor alle kandidaten dezelfde afwijkende afspraken maakt. Geef aannames expliciet aan. Pseudocode mag waar gevraagd. Code wordt niet uitgevoerd of automatisch gecompileerd.</p>
+        <p>Theorie wordt automatisch nagekeken. Code en open antwoorden beoordeelt een mens met vaste criteria en een vervolginterview. Er is geen automatische aanname- of afwijzingsbeslissing. De niveau-indeling en score-indicatie zijn een eigen voorstel, geen gevalideerde selectietest of beleid van 9altitudes.</p>
+        <p><strong>Privacy en grenzen:</strong> antwoorden blijven in de browseropslag op deze computer. Exportbestanden bevatten antwoorden en feedback. Er is geen account, toegangsbeveiliging, proctoring of veilige scheiding tussen kandidaat en beoordelaar. Antwoordmodellen staan in de pagina en zijn technisch in te zien. Alleen gebruiken voor begeleide afname; niet als onbeveiligde publieke toets verspreiden. Deel geen echte klantgegevens, tokens of persoonsgegevens.</p>
+      </details>
+    </div>
+    <div class="card"><h2>Eerdere afnames op deze computer</h2><div id="sessions"></div><button id="import-button">Importeer eerder geëxporteerd dossier</button><input id="import-file" type="file" accept=".json,application/json" hidden></div>
+    <div class="card"><h2>Aansluiting op de vacature</h2>
+      <p>De opdrachten richten zich op C#/OOP, Dynamics 365 CE, Dataverse, Power Platform, plug-ins, API-integraties, OAuth, testen, code reviews, CI/CD, migratie en support. Azure en SQL zijn in de vacature een pré; de verdiepende Azure-vragen zijn hier bewust onderdeel van het medior-/seniorprofiel.</p>
+      <p><a href="https://9altitudes.com/nl/jouw-avontuur/vacatures/technical-consultant-microsoft-dynamics-365-ce-net-c-azure" target="_blank" rel="noopener noreferrer">Bron: vacature van 9altitudes</a>. De vacature en stijlreferentie zijn op 30 oktober 2026 in de browser geraadpleegd. De vacature noemt senior; de junior- en mediortrajecten zijn eigen aanvullingen. De vragen en rubrieken zijn zelfstandig opgesteld, niet door 9altitudes goedgekeurd. Dezelfde open-sourcelettertypen worden via Google Fonts geladen, met lokale fallback wanneer die niet bereikbaar zijn. Antwoorden worden niet naar deze lettertypedienst verstuurd.</p>
+    </div>
+  </section>
+  <section id="candidate-view" hidden>
+    <div class="row" style="justify-content:space-between"><div><div class="eyebrow" id="attempt-label"></div><h1 id="attempt-title"></h1></div><span class="pill" id="elapsed"></span></div>
+    <p class="muted" id="progress-label"></p><progress id="progress" max="10" value="0" aria-label="Aantal beantwoorde vragen"></progress>
+    <div class="layout"><nav id="question-nav" aria-label="Vragen"></nav><div>
+      <article class="card" id="question"></article>
+      <div class="actions"><button id="previous">Vorige</button><button id="next" class="primary">Volgende</button></div>
+      <div class="card"><h3>Klaar met het assessment?</h3><p class="muted">Controleer je antwoorden. Na het bevestigen zijn ze in de interface niet meer aanpasbaar.</p><div id="submit-check" hidden class="status"><p id="submit-warning"></p><button class="primary" id="confirm-submit">Definitief inleveren</button> <button id="cancel-submit">Nog controleren</button></div><button id="submit-button">Inleveren...</button></div>
+    </div></div>
+  </section>
+  <section id="review-view" hidden></section>
+  <footer class="muted" style="font-size:12px;margin-top:25px">Talentlab · Zelfstandig concept voor begeleide beoordeling · Geen officiële 9altitudes-toets</footer>
+</main>
 <script>
-const mk=(n,piek,dal,gas,fs,fg,kort,ng=266.39,eb=-628.96)=>({n,piek,dal,gas,fs,fg,ns:475.92,ng,eb,kort});
-const DEF=[
-mk('Budget contract 3-10-25',.2511,.2511,1.1933,8.99,8.99,-415,246.09,-635.19),
-mk('Budget prijs 1-1-26',.23904,.23904,1.22043,8.99,8.99,-415),
-mk('Essent contract 30-10',.3693,.3668,1.9409,11.7,7.99,-470),
-mk('Gaslicht aanbod 9-11',.3356,.3331,1.8217,11.7,7.99,-370),
-mk('Gaslicht aanbod 16-11',.3356,.3331,1.8217,11.7,7.99,-410),
-mk('Gaslicht budget 29-10',.31165,.31165,1.81107,8.99,8.99,-150),
-mk('Gaslicht budget tel. 29-10',.33045,.3305,1.8907,8.99,8.99,-60),
-mk('Budget variabel',.41,.41,1.99,8.99,8.99,0),
-mk('Tikker',.27085,.27085,1.48575,6.99,5.99,-180),
-mk('En Direct 16-11',.3141,.3116,1.7853,10.39,7.49,-310),
-mk('Essent 1 jr vast 22-11',.3356,.3331,1.8217,11.7,7.99,-430),
-mk('VEH Mega 1 jr vast 22-11',.33846,.31048,1.70269,3.53,3.53,-200),
-mk('Gaslicht 1 jr vast 22-11',.315,.315,1.7523,8.99,7.99,-290),
-mk('Vattenfall 1 jr vast 22-11',.310634,.310634,1.771174,8.99,7.99,0)];
-const DV={vp:2000,vd:0,vg:1200};
-const KEY='energie-scenarios-v2';
-let S;try{S=JSON.parse(localStorage.getItem(KEY))||null}catch(x){S=null}
-if(!Array.isArray(S)||!S.length)S=JSON.parse(JSON.stringify(DEF));
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem(KEY+'-v',JSON.stringify(V))}catch(x){}};
-let V;try{V=JSON.parse(localStorage.getItem(KEY+'-v'))}catch(x){}
-if(!V)V=Object.assign({},DV);
-const e=v=>'€ '+v.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2});
-const n=(v,d=1)=>v.toLocaleString('nl-NL',{minimumFractionDigits:d,maximumFractionDigits:d});
-function calc(s){const c={};c.tp=s.piek*V.vp+s.dal*V.vd;c.vs=s.fs*12;c.ns=s.ns;c.eb=s.eb;
-c.stroom=c.tp+c.vs+c.ns+c.eb;c.tg=s.gas*V.vg;c.vgv=s.fg*12;c.ng=s.ng;c.gasT=c.tg+c.vgv+c.ng;
-c.tot=c.stroom+c.gasT;c.jaar=c.tot+s.kort;return c}
-const F=[
-['Tarieven',0],['Stroom piek (€/kWh)','piek'],['Stroom dal (€/kWh)','dal'],['Gas (€/m³)','gas'],['Vast stroom (€/mnd)','fs'],['Vast gas (€/mnd)','fg'],
-['Vaste bedragen per jaar',0],['Netwerk stroom (€)','ns'],['Netwerk gas (€)','ng'],['Energiebelasting/teruggave (€, negatief)','eb'],['Korting (€, negatief)','kort']];
-function buildInputs(){
-document.getElementById('inp').innerHTML='<tr><th></th>'+S.map((s,i)=>'<th style="min-width:130px"><input class="nm" data-i="'+i+'" data-k="n" value="'+s.n.replace(/"/g,'&quot;')+'"><div style="margin-top:4px"><button data-act="dup" data-i="'+i+'" title="Kopieer scenario">Kopieer</button> <button data-act="del" data-i="'+i+'" title="Verwijder scenario"'+(S.length<2?' disabled':'')+'>✕</button></div></th>').join('')+'</tr>'+
-F.map(f=>f[1]===0?'<tr class="s"><td colspan="'+(S.length+1)+'">'+f[0]+'</td></tr>':'<tr><td>'+f[0]+'</td>'+S.map((s,i)=>'<td><input type="number" step="any" data-i="'+i+'" data-k="'+f[1]+'" value="'+s[f[1]]+'"></td>').join('')+'</tr>').join('');
-document.querySelectorAll('#inp input').forEach(el=>el.oninput=()=>{const k=el.dataset.k,i=+el.dataset.i;
-if(k==='n')S[i].n=el.value;else{const v=parseFloat(el.value);S[i][k]=isNaN(v)?0:v}save();render()});
-document.querySelectorAll('#inp button').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;
-if(b.dataset.act==='dup')S.splice(i+1,0,Object.assign({},S[i],{n:S[i].n+' (kopie)'}));
-else if(S.length>1)S.splice(i,1);
-save();buildInputs();render()})}
-document.getElementById('add').onclick=()=>{S.push(Object.assign({},S[S.length-1],{n:'Nieuw scenario '+(S.length+1)}));save();buildInputs();render()};
-const C=[['Stroom variabel','tp','#0969da'],['Stroom vast','vs','#54aeff'],['Netwerk stroom','ns','#8250df'],['Gas variabel','tg','#bc4c00'],['Gas vast','vgv','#fb8f44'],['Netwerk gas','ng','#bf3989']];
-function render(){
-const R=S.map(calc),base=R[0];
-document.getElementById('cards').innerHTML=S.map((s,i)=>{const d=R[i].jaar-base.jaar,p=base.jaar?d/base.jaar*100:0;
-return '<div class="card"><div class="l">'+s.n+'</div><div class="v">'+e(R[i].jaar)+'</div><div class="l">'+(i?'<span class="'+(d>0?'up':'down')+'">'+(d>0?'▲ ':'▼ ')+e(Math.abs(d))+' ('+n(p)+'%)</span> t.o.v. '+S[0].n:'per jaar, na korting')+'</div><div class="l">≈ '+e(R[i].jaar/12)+' p.m.</div></div>'}).join('');
-const max=Math.max(1,...R.map(c=>C.reduce((a,x)=>a+Math.max(0,c[x[1]]),0)))*1.02;
-document.getElementById('chart').innerHTML=S.map((s,i)=>{const c=R[i];return '<div class="row"><div>'+s.n+'<div class="tip">na korting: '+e(c.jaar)+'</div></div><div><div class="bar">'+C.map(x=>'<div title="'+x[0]+': '+e(c[x[1]])+'" style="width:'+(Math.max(0,c[x[1]])/max*100)+'%;background:'+x[2]+'"></div>').join('')+'</div><div class="tip">Netto '+e(c.tot)+' (incl. energiebelasting '+e(s.eb)+'), korting '+e(s.kort)+'</div></div></div>'}).join('');
-document.getElementById('legend').innerHTML=C.map(x=>'<span><i style="background:'+x[2]+'"></i>'+x[0]+'</span>').join('');
-const T=[['STROOM',0,2],['Variabel',c=>c.tp],['Vast',c=>c.vs],['Netwerk',c=>c.ns],['Energiebelasting',c=>c.eb],['Totaal stroom',c=>c.stroom,1],
-['GAS',0,2],['Variabel',c=>c.tg],['Vast',c=>c.vgv],['Netwerk',c=>c.ng],['Totaal gas',c=>c.gasT,1],
-['TOTAAL',0,2],['Totaal verbruik',c=>c.tot],['Korting',(c,s)=>s.kort],['Totaal per jaar',c=>c.jaar,1],['Per maand',c=>c.jaar/12]];
-document.getElementById('tbl').innerHTML='<tr><th></th>'+S.map(s=>'<th>'+s.n+'</th>').join('')+'</tr>'+T.map(r=>r[2]==2?'<tr class="s"><td colspan="'+(S.length+1)+'">'+r[0]+'</td></tr>':'<tr'+(r[2]?' class="t"':'')+'><td>'+r[0]+'</td>'+S.map((s,i)=>'<td>'+e(r[1](R[i],s))+'</td>').join('')+'</tr>').join('')}
-['vp','vd','vg'].forEach(k=>{const el=document.getElementById(k);el.value=V[k];el.oninput=()=>{const v=parseFloat(el.value);V[k]=isNaN(v)?0:v;save();render()}});
-document.getElementById('reset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));V=Object.assign({},DV);['vp','vd','vg'].forEach(k=>document.getElementById(k).value=V[k]);save();buildInputs();render()};
-buildInputs();render();
-</script></body></html>
+"use strict";
+const $ = id => document.getElementById(id);
+const q = (id, type, domain, title, prompt, extra) => ({ id, type, domain, title, prompt, ...extra, points: type === "theory" ? 5 : type === "code" ? 20 : 10 });
+const theory = (id, domain, title, prompt, choices, correct, explanation) => q(id, "theory", domain, title, prompt, { choices, correct, explanation });
+const written = (id, type, domain, title, prompt, starter, criteria, model) => q(id, type, domain, title, prompt, { starter, criteria, model });
+const BANK_VERSION = 1;
+const levels = {
+  junior: { title: "Junior", time: 60, subtitle: "Fundament & leervermogen", description: "C#-basis, Dataverse, veilige uitbreidingen en helder samenwerken.", questions: [
+    theory("j1", "C# / OOP", "Contracten in C#", "Waarom gebruik je een interface voor een service die vanuit een plug-in wordt aangeroepen?", ["Om automatisch meer threads te starten.", "Om een contract vast te leggen en implementaties, bijvoorbeeld in tests, te kunnen vervangen.", "Om te voorkomen dat een methode uitzonderingen geeft.", "Om Dataverse-autorisatie over te slaan."], 1, "Een interface maakt afhankelijkheden expliciet en faciliteert vervangbare implementaties en test doubles; zij regelt geen threading of autorisatie."),
+    theory("j2", "Dataverse", "Wat staat er in Target?", "Een Update-plug-in ontvangt een Entity als Target. Wat mag je aannemen?", ["Alle kolommen van de rij zijn altijd aanwezig.", "Alleen gewijzigde of expliciet meegestuurde kolommen kunnen aanwezig zijn; gebruik waar nodig een geregistreerde pre-image.", "Target bevat altijd de rij na alle plug-ins.", "Een ontbrekende kolom is altijd een lege string."], 1, "Een Update Target is een gedeeltelijke Entity. Maak onderscheid tussen een ontbrekende kolom en een expliciet naar null gewijzigde kolom."),
+    theory("j3", "Power Platform", "Waar plaats je validatie?", "Een businessregel moet bij elke ondersteunde schrijfroute worden afgedwongen, ook bij API-calls. Wat is de beste keuze?", ["Alleen JavaScript op een modelformulier.", "Een nachtelijke flow die fouten achteraf wist.", "Server-side validatie, bijvoorbeeld een synchrone Dataverse-plug-in, passend bij de eis.", "Alleen de knop Opslaan verbergen."], 2, "Formulierlogica alleen dekt API-imports en andere clients niet. Server-side validatie biedt een centraal afdwingpunt."),
+    theory("j4", "API / OAuth", "Geheimen beheren", "Een Azure-integratie gebruikt een client secret. Welke aanpak is verantwoord?", ["Secret in de C#-broncode zetten.", "Secret in elke foutmelding opnemen.", "Het secret in een beveiligde secret store beheren, rechten beperken en roteren; managed identity gebruiken waar ondersteund.", "Het secret via een queryparameter in een gedeelde URL plaatsen."], 2, "Bewaar geen geheimen in code of logs. Kies managed identity waar de hele authenticatieketen dat ondersteunt; anders beveiligde opslag en rotatie."),
+    written("j5", "code", "C# / testen", "Veilige naamopbouw", "Maak FormatName af. Verwijder witruimte aan begin/einde, sla null/lege delen over en zet precies één spatie tussen niet-lege delen. Geef \"Onbekend\" terug als beide delen leeg zijn. Voeg minimaal drie concrete testgevallen met verwachte uitkomst toe. Moderne C#; geen Dataverse-SDK nodig.", 'public static string FormatName(string? first, string? last)\n{\n    // TODO\n}\n\n// Testgevallen + verwachte uitkomsten:\n', ["Null, lege strings en alleen witruimte correct behandelen (5).", "Delen trimmen en precies één scheidingsspatie gebruiken (5).", "Beide delen leeg geeft Onbekend; leesbare C# (5).", "Minimaal drie relevante tests inclusief randgevallen en uitkomsten (5)."], 'Voorbeeld:\nvar parts = new[] { first?.Trim(), last?.Trim() }\n    .Where(p => !string.IsNullOrWhiteSpace(p));\nvar name = string.Join(" ", parts);\nreturn name.Length == 0 ? "Onbekend" : name;\n\nTests: (null, null) → Onbekend; (" Ada ", " Lovelace ") → Ada Lovelace; (" ", "Jansen") → Jansen. Gelijkwaardige oplossingen accepteren.'),
+    written("j6", "code", "Dataverse plug-in", "Normaliseren zonder extra Update", "Vul de kern van een synchrone PreOperation-plug-in voor Update van account aan. Normaliseer alleen een aanwezige name (trim). Ontbrekende name: niet wijzigen. Expliciet null of witruimte: afwijzen met InvalidPluginExecutionException. Schrijf direct in Target; doe geen service.Update. Microsoft.Xrm.Sdk is beschikbaar. Voeg testscenario's toe.", 'public void Execute(IServiceProvider serviceProvider)\n{\n    var context = (IPluginExecutionContext)serviceProvider\n        .GetService(typeof(IPluginExecutionContext));\n    // TODO: context / Target bewaken en name verwerken\n}\n', ["MessageName=Update, Stage=20, account en een Entity Target bewaken (5).", "Afwezige name ongemoeid laten; null/whitespace afwijzen (5).", "Trimmen door Target aan te passen zonder extra Update (5).", "Tests: afwezig, null/leeg en geldige waarde; juiste registratie benoemen (5)."], 'Registreer sync PreOperation (20), Update, account, filterattribuut name. Guard MessageName/Stage en Target type/logical name. If !target.Contains("name") return; lees target.GetAttributeValue<string>("name"); bij IsNullOrWhiteSpace een InvalidPluginExecutionException; anders target["name"] = name.Trim(). Geen extra Update nodig. Test ook niet-passende context.'),
+    written("j7", "open", "Consultancy", "Van wens naar acceptatiecriterium", "Een functioneel consultant vraagt: \"Zorg dat dubbele contacten niet meer voorkomen.\" Welke verduidelijkende vragen stel je? Beschrijf twee meetbare acceptatiecriteria en hoe je deze test.", "", ["Definitie van dubbel, scope en uitzonderingen expliciet maken (3).", "Twee meetbare criteria met positief/negatief scenario (4).", "Afstemming over detecteren versus blokkeren en impact op import/API (3)."], "Vraag naar identificerende velden, gedeelde e-mailadressen, bestaande duplicaten, normalisatie, kanaal en merge-proces. Criteria bijvoorbeeld: identieke externe unieke sleutel wordt geweigerd via zowel UI als API; verschillende sleutels met gedeelde e-mail blijven toegestaan als dat afgesproken is. Test criteria en race conditions waar relevant."),
+    written("j8", "open", "Support", "Een fout reproduceerbaar maken", "Een gebruiker meldt dat Opslaan soms mislukt in Dynamics 365 CE. Hoe pak je dit aan zonder direct productiecode aan te passen? Geef aan welke informatie je verzamelt en hoe je veilig communiceert.", "", ["Reproductie, tijdstip, correlatie-ID, scope en recente wijzigingen verzamelen (3).", "Passende logs/plug-in tracing en testomgeving gebruiken (4).", "Geen geheimen/persoonsgegevens onnodig loggen; voortgang en escalatie afspreken (3)."], "Begin met impact en reprostappen, betrokken rollen, invoer, omgeving en recente deployments. Zoek op correlatie-ID met beperkte tracing, vergelijk reproduceerbaar in test en deel status/volgende stap. Geen ongecontroleerde logging of wijzigingen in productie."),
+    written("j9", "open", "Testen / DevOps", "Een veilige kleine release", "Je hebt een kleine plug-inwijziging gemaakt. Beschrijf je route van commit naar productie, inclusief tests, review en herstel bij problemen.", "", ["Unit- en integratie-/acceptatietests passend kiezen (4).", "Pull request, review en herhaalbare oplossing/pipeline (3).", "Omgevingen scheiden, smoke test en rollback/herstelafspraak (3)."], "Branch en kleine commit, tests, PR-review, build en solution artifact, deploy naar test met configuratie per omgeving, acceptatie, goedgekeurde productie-deploy en smoke test. Rollback kan meer vragen dan een oude solution importeren; bewaar versie/artifacts en beschrijf herstelimpact."),
+    written("j10", "open", "Integratie", "Een REST-koppeling begrijpen", "Een koppeling leest nieuwe orders uit een REST-API en schrijft naar Dataverse. Noem risico's en beschrijf hoe je omgaat met authenticatie, een time-out en een order die twee keer wordt aangeleverd.", "", ["OAuth/secretbeheer en minimale rechten (3).", "Time-outs en begrensde retries voor tijdelijke fouten (3).", "Stabiele externe sleutel/upsert of andere deduplicatie en zichtbare foutafhandeling (4)."], "Gebruik beveiligde OAuth-appauthenticatie met least privilege, time-outs en gerichte retries met backoff. Gebruik een externe unieke sleutel voor idempotente verwerking. Log correlatie en status zonder secrets, en maak definitieve fouten zichtbaar voor support.")
+  ]},
+  medior: { title: "Medior", time: 90, subtitle: "Zelfstandig ontwerpen & leveren", description: "Plug-inpipeline, integratiegedrag, testbaarheid en betrouwbare releases.", questions: [
+    theory("m1", "Dataverse pipeline", "Validatie vóór de write", "Je wilt tijdens Update een waarde op dezelfde rij berekenen en die in dezelfde databasebewerking opslaan. Welke stap past doorgaans het best?", ["Asynchrone PostOperation met nog een Update.", "Synchrone PreOperation en de waarde op Target zetten.", "Alleen een formulier-onload handler.", "Een Retrieve zonder Target te wijzigen."], 1, "PreOperation (20) kan Target aanpassen binnen de write-pipeline zonder een tweede Update; transactiedetails en bedrijfsregels blijven relevant."),
+    theory("m2", "Integratie", "Throttling", "De Dataverse Web API retourneert HTTP 429 met Retry-After. Wat doe je?", ["Onmiddellijk onbeperkt parallel opnieuw proberen.", "De call als succesvol markeren.", "Retry-After respecteren, concurrency begrenzen en begrensd herproberen met observeerbare uitputting.", "Dezelfde call voortaan zonder OAuth uitvoeren."], 2, "Respecteer serverinstructies en begrens druk en retrybudget. Zorg dat mislukte verwerking zichtbaar blijft; schrijfoperaties moeten replayveilig zijn."),
+    theory("m3", "ALM", "Solutions naar productie", "Welke aanpak past bij herhaalbare Power Platform-deployments?", ["Handmatig rechtstreeks in productie aanpassen.", "Een ongeversioneerde zip via e-mail sturen.", "Versiebeheerde bron/artifacts, managed solutions in downstream-omgevingen en expliciet beheerde configuratie/connection references.", "Omgevings-URL's en secrets in elke plug-in hardcoderen."], 2, "Automatiseer versiebeheer, artifacts en deployments; onderscheid configuratie en connection references van secrets. Managed solutions vervangen geen herstelplan."),
+    theory("m4", "Dataverse / concurrency", "Dubbele orders", "Twee workers verwerken gelijktijdig dezelfde externe order. Waarom is eerst zoeken en daarna Create zonder uniciteitsconstraint niet voldoende?", ["Een query kan alleen één kolom lezen.", "Beide workers kunnen niets vinden en vervolgens beide een rij aanmaken; gebruik een unieke sleutel en atomair writegedrag.", "Create maakt automatisch altijd een duplicaat.", "OAuth voorkomt gelijktijdige verwerking."], 1, "Een check-then-act race vereist een constraint/alternate key en correct gebruik van bijvoorbeeld Upsert. Houd ook rekening met herhaalde side effects."),
+    written("m5", "code", "C# / Dataverse", "Gedeeltelijke updates juist valideren", "Een account mag alleen actief zijn wanneer new_externalid gevuld is. Schrijf de kern van Validate voor een synchrone PreOperation Update-plug-in. Target bevat alleen meegestuurde waarden; pre is de geregistreerde pre-image met statecode en new_externalid. statecode 0 is actief. Ontbrekende Target-kolom erft de pre-image; expliciet null overschrijft die. Gooi bij ontbrekende noodzakelijke context/beeldkolommen een duidelijke configuratiefout. Voeg tests toe.", 'static void Validate(Entity target, Entity pre)\n{\n    // TODO: effectieve statecode en new_externalid bepalen\n    // TODO: invariant afdwingen\n}\n', ["Contains gebruiken om afwezig versus expliciet null te onderscheiden (5).", "Effectieve waarden uit Target/pre-image correct berekenen (5).", "Invariant afdwingen met bruikbare InvalidPluginExecutionException; ongeldige context zichtbaar (5).", "Tests voor alleen status, alleen ID, expliciet null, inactief en ontbrekende pre-imagekolommen (5)."], "Controleer dat entities account zijn en benodigde pre-imagevelden aanwezig zijn wanneer Target ze niet levert. Gebruik target.Contains(k) ? target.GetAttributeValue<T>(k) : pre.GetAttributeValue<T>(k). Expliciet null voor ID is geen fallback. statecode moet niet-null zijn; als Value==0 en IsNullOrWhiteSpace(id), weiger. Registreer pre-image en filterattributen; test SDK-gedrag voor null en ontbrekende velden."),
+    written("m6", "code", "C# / Azure-integratie", "Idempotent verwerken", "Een queue levert OrderMessage minimaal één keer. Completeer de handler met de gegeven store-interface. TryApplyAsync voert deduplicatie en het opslaan van de orderwijziging samen in één databasetransactie uit. false betekent al verwerkt. Permanente validatiefouten moeten een expliciete fout geven; tijdelijke store-fouten mogen doorstromen zodat de queuehost begrensde retries/DLQ kan regelen. Voeg tests toe. Geen echte SDK nodig.", 'record OrderMessage(string EventId, string OrderId, decimal Amount);\ninterface IOrderStore\n{\n    Task<bool> TryApplyAsync(string eventId, string orderId,\n        decimal amount, CancellationToken ct);\n}\n\nstatic async Task HandleAsync(OrderMessage message,\n    IOrderStore store, CancellationToken ct)\n{\n    // TODO\n}\n\n// Testgevallen:\n', ["EventId/OrderId en Amount valideren volgens expliciete afspraken, geen silent drop (5).", "Store met stabiele EventId eenmaal aanroepen en cancellation doorgeven (5).", "Duplicate false als no-op; fouten niet inslikken of vroegtijdig ack'en (5).", "Tests voor duplicate, success, tijdelijk falen, invalid input en cancellation (5)."], "Gooi ArgumentException of domeinspecifieke permanente fout voor lege sleutels en ongeldig bedrag (benoem of nul/negatief toegestaan is). ct.ThrowIfCancellationRequested(); await store.TryApplyAsync(message.EventId, message.OrderId, message.Amount, ct). false is geldige duplicate. Laat storage exceptions doorstromen; host moet permanente fouten niet oneindig retryen. Correctheid hangt af van de gegeven atomaire store; geen in-memory HashSet."),
+    written("m7", "open", "Architectuur", "Plug-in, flow of Azure Function?", "Een order moet direct worden gevalideerd; daarna moet een traag extern ERP worden bijgewerkt. Kies tussen een synchrone plug-in, Power Automate en Azure Function/queue. Beschrijf transacties, fouten en waarom je niet alles synchroon uitvoert.", "", ["Directe invariant onderscheiden van externe side effect (3).", "Asynchrone grens, duurzaamheid/outbox of betrouwbare eventbron en idempotentie (4).", "Trade-offs van flow versus Function, beheer en gebruikersstatus (3)."], "Directe validatie in sync pipeline; betrouwbare asynchrone eventoverdracht met verwerking buiten de gebruikerstransactie. Geen trage HTTP-call in een database-transactie. Kies flow bij passende schaal/complexiteit en beheer; Function/queue voor programmeerbare controle. Beschrijf de betrouwbaarheid van publicatie en status/compensatie."),
+    written("m8", "open", "Migratie / SQL", "Herhaalbare datamigratie", "Je migreert 200.000 accounts en bijbehorende contacten naar Dataverse. Beschrijf mapping, proefmigratie, relaties, foutafhandeling, controle en cut-over. SQL mag je voor staging of controle gebruiken; ga niet uit van directe writes in de Dataverse-database.", "", ["Mapping, stabiele externe sleutels en volgorde van relaties (3).", "Batching/throttling, checkpoints, datakwaliteit en replay (4).", "Reconciliatie, delta/cut-over en concrete go/no-go (3)."], "Profileer brondata in staging, map eigenaars/keuzes/relaties, test subset en herhaalbaar upsert-pad. Migreer parents vóór children of los relaties later op. Beperk concurrency, houd foutrecords en checkpoints bij. Vergelijk aantallen én sleutels/bedragen/steekproeven; plan deltafreeze en terugvalscenario."),
+    written("m9", "open", "Support / performance", "Trage plug-in onderzoeken", "Na een release stijgt de opslagtijd van 300 ms naar 5 seconden. Beschrijf je onderzoek, welke metingen je nodig hebt en een veilig herstelplan.", "", ["Vergelijk baseline, versies, volumes en correlatie met traces (3).", "Queryvorm/kolommen, externe calls, herhaalde writes en pipeline bekijken (4).", "Reproduceerbare loadtest, meetbaar doel en beheerste mitigatie (3)."], "Gebruik correlatie en timings per stap om vertraging te lokaliseren, zoek brede queries, N+1, locks, sync netwerkcalls en recursie. Verzamel beperkt diagnostiek zonder persoonsgegevens. Test hypothese in representatieve omgeving; feature toggle of goedgekeurd herstel met monitoring en heldere impact."),
+    written("m10", "open", "Consultancy / DevOps", "Raming met onzekerheid", "Een consultant vraagt een koppeling met een onbekende leveranciers-API \"voor vrijdag\". Welke vragen stel je en hoe maak je scope, raming, testaanpak en risico's bespreekbaar?", "", ["API-contract, auth, volume, beschikbaarheid en foutscenario's concretiseren (3).", "Spike, aannames, afhankelijkheden en bandbreedte onderbouwen (4).", "MVP/acceptatiecriteria, review, releasepad en verwachtingsmanagement (3)."], "Vraag documentatie/sandbox en toegangsbeheer; maak een korte risicospike. Splits MVP van latere features, raam per activiteit met onzekerheidsmarge en expliciete afhankelijkheden. Spreek testdata, ownership, monitoring en go/no-go af in plaats van een ongefundeerde harde belofte.")
+  ]},
+  senior: { title: "Senior", time: 120, subtitle: "Architectuur & technisch leiderschap", description: "Consistentie, schaalbaarheid, security-afwegingen en teamkwaliteit.", questions: [
+    theory("s1", "Distributed systems", "Exactly-once: welke garantie?", "Een queueconsumer schrijft naar Dataverse en bevestigt daarna het bericht. De worker crasht tussen beide stappen. Welke uitspraak is juist?", ["De queue garandeert dat de Dataverse-write nooit herhaald wordt.", "Een langere lock maakt duplicaten onmogelijk.", "Herlevering is mogelijk; ontwerp een duurzaam idempotent verwerkingseffect en erken de grens van transacties tussen systemen.", "Een HTTP 200 van Dataverse bevestigt automatisch het queuebericht."], 2, "Een write en broker-ack zijn doorgaans geen enkele atomaire transactie. Ontwerp effect-idempotentie en herstel; noem dit niet zonder meer exactly-once."),
+    theory("s2", "Dataverse / concurrency", "Optimistische concurrency", "Twee gebruikers wijzigen dezelfde rij; de tweede mag de eerste wijziging niet ongemerkt overschrijven. Wat past?", ["Een Retry zonder de rij opnieuw te lezen.", "RowVersion/ETag gebruiken met een ondersteunde conditionele update en conflicten expliciet afhandelen.", "Alle updates onder een global lock in één browser plaatsen.", "Alleen de laatst gewijzigde datum in de UI tonen."], 1, "Gebruik ondersteunde optimistic concurrency via RowVersion of ETag/If-Match waar van toepassing. Behandel conflicten bewust; een blinde retry kan de bescherming ongedaan maken."),
+    theory("s3", "Identity / security", "Identiteit is niet hetzelfde als autorisatie", "Een integratie gebruikt workload identity zonder opgeslagen secret. Wat blijft noodzakelijk voor Dataverse?", ["Niets: secretless betekent onbeperkte toegang.", "Een passende applicatie-identiteit/-userconfiguratie en minimale securityrollen, plus toetsing van de ondersteunde authenticatieroute.", "System Administrator voor iedere workload.", "Een persoonlijke refresh token in een repository."], 1, "Secretless authenticatie vervangt geen app-user provisioning, autorisatie, ondersteunde SDK-configuratie of least privilege."),
+    theory("s4", "ALM / herstel", "Schemawijziging terugdraaien", "Een managed solution-release verwijdert datahoudende onderdelen. Waarom is het oude zipbestand importeren geen volledig rollbackplan?", ["Oude zipbestanden hebben nooit versienummers.", "Verwijderde data en solution dependencies/layers komen niet vanzelf terug; herstel en compatibiliteit vereisen een getest plan.", "Managed solutions staan geen enkele automatisering toe.", "Een pipeline kan automatisch iedere datamigratie ongedaan maken."], 1, "Onderscheid roll-forward, componentcompatibiliteit, databack-up/restore en solution-layering. Gebruik expand/contract waar mogelijk en test herstel met realistische afhankelijkheden."),
+    written("s5", "code", "C# / optimistic concurrency", "Veilig herberekenen bij conflict", "Vul SetCreditLimitAsync aan. De repository leest Amount, Currency en Version. desiredAmount is in dezelfde valuta als currency. Bij een currency-mismatch mag nooit worden geschreven. TryUpdateAsync is een atomaire conditionele write: false betekent versieconflict. Lees bij conflict opnieuw, controleer de invariant opnieuw en stop na maximaal drie writepogingen met een expliciete fout. Tijdelijke infrastructuurfouten niet inslikken. Voeg tests toe.", 'record Snapshot(decimal Amount, string Currency, string Version);\ninterface ICreditRepository\n{\n    Task<Snapshot> ReadAsync(Guid accountId, CancellationToken ct);\n    Task<bool> TryUpdateAsync(Guid accountId, decimal amount,\n        string expectedVersion, CancellationToken ct);\n}\n\nstatic async Task SetCreditLimitAsync(ICreditRepository repo,\n    Guid accountId, decimal desiredAmount, string currency,\n    CancellationToken ct)\n{\n    // TODO\n}\n', ["Valideer accountId, bedrag, currency; currency-invariant bij elke herlezing (5).", "Maximaal drie conditionele writes met telkens nieuwe Version (5).", "Cancellation en infrastructuurfouten doorgeven; expliciete exhausted-conflictfout (5).", "Tests voor conflict/succes, blijvend conflict, valuta verandert, invalid input en cancellation (5)."], "Guard lege Guid, negatief bedrag en lege currency. Loop maximaal 3 keer: cancellation check, ReadAsync, valuta vergelijken (bijv. OrdinalIgnoreCase met benoemde normalisatie), TryUpdateAsync met zojuist gelezen Version; bij true return. Na derde false expliciete concurrency exception. Geen catch-all of blinde update. Repo moet conditionele writes werkelijk afdwingen."),
+    written("s6", "code", "C# / integratiegrenzen", "Outbox-worker zonder schijngaranties", "Completeer DispatchAsync. De repo geeft één reeds geclaimd outboxrecord terug; MarkSentAsync markeert het verzonden. Een crash tussen SendAsync en MarkSentAsync blijft mogelijk. Gebruik EventId als MessageId en geef exceptions/cancellation door. Beschrijf naast de code de vereiste idempotentie aan de ontvangende kant, het claim/leasecontract en minimaal drie failuretests. Beloof geen globale exactly-once.", 'record OutboxRecord(Guid Id, string EventId, string Payload);\ninterface IOutboxRepository\n{\n    Task<OutboxRecord?> ClaimAsync(CancellationToken ct);\n    Task MarkSentAsync(Guid id, CancellationToken ct);\n}\ninterface IMessageSender\n{\n    Task SendAsync(string messageId, string payload, CancellationToken ct);\n}\n\nstatic async Task DispatchAsync(IOutboxRepository repo,\n    IMessageSender sender, CancellationToken ct)\n{\n    // TODO\n}\n\n// Ontwerpvoorwaarden en failuretests:\n', ["Alleen geclaimd record verzenden; EventId als stabiele MessageId; null is geen werk (5).", "Eerst await SendAsync, pas daarna MarkSentAsync; fouten/cancellation niet inslikken (5).", "Atomaire bronwrite+outbox, claim/leaseherstel en duurzame consumer-idempotentie expliciet (5).", "Tests voor sendfail, markfail/replay, crash en lease; exactly-once niet onterecht claimen (5)."], "var item = await repo.ClaimAsync(ct); if (item is null) return; await sender.SendAsync(item.EventId, item.Payload, ct); await repo.MarkSentAsync(item.Id, ct). Contract: outbox+businesswrite atomair in dezelfde eigen store; geen claim dat losse Dataverse- en Azure-writes één transactie zijn. Claim atomair, lease verloopt en herstel is geregeld. Ontvanger koppelt EventId uniek aan de businesswrite in één transactie. Broker-dedup alleen is niet voldoende voor onbeperkte replay. Tests illustreren elke crashgrens."),
+    written("s7", "open", "Architectuur", "Van Dataverse naar ERP op schaal", "Ontwerp een integratie van Dynamics 365 CE met een ERP: 50.000 wijzigingen per dag, korte pieken van 100/s, ERP soms 2 uur offline. Verlies van wijzigingen is niet toegestaan; normale zichtbaarheid in ERP binnen 5 minuten. Maak aannames expliciet. Beschrijf publicatiegaranties, volgorde, idempotentie, capaciteit, monitoring en herstel.", "", ["Meetbare SLO's, piek-/backlogcapaciteit en aannames onderscheiden (2).", "Betrouwbare eventcapture/publicatie zonder verzonnen cross-system transactie (3).", "Idempotentie, volgorde per aggregate, DLQ en replay (3).", "Operationeel herstel, dashboards en security (2)."], "Definieer betekenis van geen verlies, uitzonderingen op 5-minuten-SLO tijdens storing en recovery time. Kies aantoonbaar betrouwbare Dataverse-eventbron met reconcile-strategie; onderscheid eigen transactionele outbox van Dataverse-transacties. Buffer queue, bereken opslag/drain-rate en retentie, limieten ERP/Dataverse, ordering per order en versie. Durable consumer-dedup, DLQ tooling, auditeerbare replay, alerts op oldest message age en reconciliation."),
+    written("s8", "open", "Technisch leiderschap", "Review met structurele verbetering", "Een team bouwt herhaaldelijk plug-ins met brede queries, dubbele updates en weinig tests. Hoe verbeter je kwaliteit zonder alleen als verplichte reviewer een bottleneck te worden? Geef een concreet plan voor zes weken en meetbare resultaten.", "", ["Onderliggende oorzaken en coaching/blameless voorbeelden (2).", "Geautomatiseerde checks, templates en gerichte tests (3).", "Gedeeld ownership/reviewrotatie en haalbaar zeswekenplan (3).", "Meetbare kwaliteit én doorlooptijd, geen individuele ranking (2)."], "Baseline productiefouten/rework en PR-doorlooptijd. Week 1 samen voorbeelden onderzoeken; week 2-3 patterns, testfixtures en checklists; week 4 paired reviews en pipelinechecks; week 5-6 teamownership en metrics evalueren. Combineer defect/leadtimemeting met context; voorkom centrale gatekeeping en ongefundeerde prestatieoordelen."),
+    written("s9", "open", "Incident / security", "Verkeerde gegevens in logs", "Tijdens een productie-incident blijkt een integratie access tokens en klantgegevens te loggen. Welke acties neem je nu, in de eerste dag en structureel? Houd rekening met bewijsbehoud, minimale toegang en mogelijke privacyverplichtingen.", "", ["Logging stoppen/beperken en credentials intrekken/roteren waar passend (3).", "Scope, veilige bewijsbewaring en security/privacyverantwoordelijke betrekken (3).", "Redactie, retentie, toegangsbeheer, tests en incidentrunbook (4)."], "Beperk blootstelling direct zonder bewijs willekeurig te wissen; revoke/rotate gelekte tokens/credentials waar relevant en controleer geldigheid. Informeer incident/security/privacyteam voor impact en wettelijke beoordeling (geen automatisch juridisch oordeel). Bewaar minimaal afgeschermd bewijs en bepaal toegang/duur. Structurele allowlist logging, redactie, scanners/tests en geteste respons."),
+    written("s10", "open", "Consultancy / besluitvorming", "Een architectuurkeuze verdedigen", "Een klant wil voor elk proces maatwerk in C#. Een functioneel consultant wil alles in Power Automate. Stel een besliskader op en pas het toe op directe transactievalidering, een goedkeuringsflow en een hoogvolume ERP-koppeling. Bespreek kosten, beheer, grenzen en overdracht.", "", ["Criteria: transactionele eis, complexiteit, volume/latency en licenties (3).", "Drie keuzes met aantoonbare trade-offs, geen dogma (4).", "ADR, PoC/meting, ownership, overdracht en herijkmoment (3)."], "Validatie in sync serverpipeline als invariant; approval via passende low-code workflow; integratie via flow of code/queue afhankelijk van meetbare eisen en beperkingen. Bereken licentie/requestkosten, beheer/skillset, retries, deployment en monitoring. Leg argumenten, alternatieven en risicovalidatie vast met klant en functioneel consultant; plan herbeoordeling.")
+  ]}
+};
+const STORAGE_KEY = "talentlab.d365ce.v1";
+let attempts = [];
+let current = null;
+let selectedLevel = "junior";
+let index = 0;
+let storageAvailable = true;
+const message = text => { $("message").textContent = text; };
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(attempts)); storageAvailable = true; }
+  catch (error) { storageAvailable = false; message("Opslaan in browseropslag is mislukt. Houd deze pagina open en exporteer het dossier om antwoorden te bewaren. " + error.message); }
+}
+function validateAttempt(a) {
+  if (!a || typeof a !== "object" || a.bankVersion !== BANK_VERSION || typeof a.id !== "string" ||
+      !/^[a-zA-Z0-9-]{1,80}$/.test(a.id) || !Object.hasOwn(levels, a.level) ||
+      typeof a.candidate !== "string" || !a.candidate.trim() || a.candidate.length > 80 ||
+      !["draft", "submitted"].includes(a.status) || !Number.isFinite(Date.parse(a.startedAt)) ||
+      (a.status === "submitted" && !Number.isFinite(Date.parse(a.submittedAt))) ||
+      !a.answers || typeof a.answers !== "object" || Array.isArray(a.answers) ||
+      !a.grades || typeof a.grades !== "object" || Array.isArray(a.grades)) throw new Error("Onjuist of niet-ondersteund assessmentdossier.");
+  for (const question of levels[a.level].questions) {
+    const answer = a.answers[question.id];
+    if (answer !== undefined && (question.type === "theory" ? !Number.isInteger(answer) || answer < 0 || answer >= question.choices.length : typeof answer !== "string" || answer.length > 60000)) throw new Error("Ongeldig antwoord in dossier.");
+    const grade = a.grades[question.id];
+    if (grade !== undefined && (question.type === "theory" || !grade || !Number.isInteger(grade.score) || grade.score < 0 || grade.score > question.points || typeof grade.feedback !== "string" || grade.feedback.length > 10000)) throw new Error("Ongeldige beoordeling in dossier.");
+  }
+  return {
+    id: a.id, bankVersion: BANK_VERSION, level: a.level, candidate: a.candidate,
+    status: a.status, startedAt: a.startedAt, submittedAt: a.status === "submitted" ? a.submittedAt : null,
+    answers: Object.fromEntries(levels[a.level].questions.filter(q => a.answers[q.id] !== undefined).map(q => [q.id, a.answers[q.id]])),
+    grades: Object.fromEntries(levels[a.level].questions.filter(q => q.type !== "theory" && a.grades[q.id] !== undefined).map(q => [q.id, { score: a.grades[q.id].score, feedback: a.grades[q.id].feedback }]))
+  };
+}
+try {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) throw new Error("Opslag heeft een onverwacht formaat.");
+    attempts = data.map(validateAttempt);
+  }
+} catch (error) { message("Eerdere afnames konden niet worden geladen. De bestaande opslag is niet overschreven. Exporteer of herstel deze eerst via je browser. " + error.message); storageAvailable = false; }
+let loadFailed = !storageAvailable;
+function persist() { if (!loadFailed) save(); else message("Automatische opslag is geblokkeerd om onleesbare bestaande data te beschermen. Exporteer je huidige dossier."); }
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+function show(view) {
+  ["home", "candidate-view", "review-view"].forEach(id => $(id).hidden = id !== view);
+  $("export-button").disabled = !current;
+}
+function selectLevel(level) {
+  selectedLevel = level;
+  $("selection").textContent = `${levels[level].title} · 10 vragen · 100 punten · circa ${levels[level].time} minuten`;
+  [...$("levels").children].forEach(button => button.setAttribute("aria-pressed", String(button.dataset.level === level)));
+}
+for (const [key, level] of Object.entries(levels)) {
+  const button = node("button", undefined, "level");
+  button.type = "button";
+  button.dataset.level = key;
+  button.append(node("span", `${level.time} MIN · 100 PUNTEN`, "eyebrow"), node("strong", level.title), node("p", level.subtitle), node("small", level.description));
+  button.onclick = () => selectLevel(key);
+  $("levels").append(button);
+}
+selectLevel("junior");
+function renderSessions() {
+  $("sessions").replaceChildren();
+  if (!attempts.length) $("sessions").append(node("p", "Nog geen afnames opgeslagen.", "muted"));
+  for (const attempt of [...attempts].reverse()) {
+    const row = node("div", undefined, "saved-item");
+    const label = node("div");
+    label.append(node("strong", attempt.candidate), node("div", `${levels[attempt.level].title} · ${attempt.status === "draft" ? "In uitvoering" : "Ingeleverd"} · ${new Date(attempt.startedAt).toLocaleDateString("nl-NL")}`, "muted"));
+    const open = node("button", attempt.status === "draft" ? "Hervatten" : "Beoordelen");
+    open.onclick = () => { current = attempt; index = 0; attempt.status === "draft" ? renderCandidate() : renderReview(); };
+    const remove = node("button", "Verwijderen");
+    remove.onclick = () => {
+      if (!confirm(`Dossier ${attempt.candidate} definitief van deze browser verwijderen? Exporteer het eerst als je het wilt bewaren.`)) return;
+      attempts = attempts.filter(a => a.id !== attempt.id);
+      if (current?.id === attempt.id) current = null;
+      persist(); renderSessions(); $("export-button").disabled = !current;
+    };
+    const controls = node("div", undefined, "row"); controls.append(open, remove);
+    row.append(label, controls); $("sessions").append(row);
+  }
+}
+function answered(question) {
+  const value = current.answers[question.id];
+  return question.type === "theory" ? Number.isInteger(value) : typeof value === "string" && value.trim().length > 0 && value.trim() !== (question.starter || "").trim();
+}
+function refreshProgress() {
+  const questions = levels[current.level].questions;
+  const count = questions.filter(answered).length;
+  $("progress").value = count;
+  $("progress-label").textContent = `${count} van 10 vragen beantwoord · ${storageAvailable && !loadFailed ? "Antwoorden worden lokaal opgeslagen" : "Exporteer om je antwoorden te bewaren"}`;
+  [...$("question-nav").children].forEach((button, i) => button.textContent = `${answered(questions[i]) ? "✓" : "○"} ${i + 1}. ${questions[i].type === "theory" ? "Theorie" : questions[i].type === "code" ? "Code" : "Open vraag"}`);
+}
+function elapsed() {
+  if (!current || current.status !== "draft") return;
+  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(current.startedAt)) / 60000));
+  $("elapsed").textContent = `${minutes} min verstreken · richttijd ${levels[current.level].time} min`;
+}
+function renderCandidate() {
+  show("candidate-view");
+  const level = levels[current.level];
+  $("attempt-label").textContent = `${current.candidate} · ${level.title}`;
+  $("attempt-title").textContent = "Laat zien hoe je denkt.";
+  $("question-nav").replaceChildren();
+  level.questions.forEach((question, i) => {
+    const button = node("button");
+    if (i === index) button.setAttribute("aria-current", "step");
+    button.onclick = () => { index = i; renderCandidate(); $("question").focus(); };
+    $("question-nav").append(button);
+  });
+  const question = level.questions[index];
+  const box = $("question");
+  box.replaceChildren();
+  box.tabIndex = -1;
+  box.append(node("div", `${index + 1} / 10 · ${question.domain} · ${question.points} punten`, "eyebrow"), node("h2", question.title), node("p", question.prompt));
+  if (question.type === "theory") {
+    const group = node("fieldset"); group.style.cssText = "border:0;padding:0;margin:20px 0 0";
+    group.append(node("legend", "Kies één antwoord"));
+    question.choices.forEach((choice, i) => {
+      const label = node("label", undefined, "choice");
+      const input = document.createElement("input"); input.type = "radio"; input.name = question.id; input.value = String(i);
+      input.checked = current.answers[question.id] === i;
+      input.onchange = () => { current.answers[question.id] = i; persist(); refreshProgress(); };
+      label.append(input, node("span", choice)); group.append(label);
+    });
+    box.append(group);
+  } else {
+    const label = node("label", question.type === "code" ? "Jouw code, tests en toelichting" : "Jouw antwoord");
+    label.htmlFor = "answer";
+    const input = document.createElement("textarea"); input.id = "answer"; input.maxLength = 60000;
+    input.value = current.answers[question.id] ?? question.starter;
+    if (question.type === "code") { input.className = "code"; input.spellcheck = false; }
+    input.oninput = () => { current.answers[question.id] = input.value; persist(); refreshProgress(); };
+    box.append(label, input, node("small", question.type === "code" ? "Code wordt niet uitgevoerd. Licht aannames toe en voeg de gevraagde tests toe." : "Beschrijf je afwegingen; er is niet altijd één juiste oplossing."));
+  }
+  $("previous").disabled = index === 0;
+  $("next").disabled = index === 9;
+  $("submit-check").hidden = true; $("submit-button").hidden = false;
+  refreshProgress(); elapsed();
+}
+function totals() {
+  const questions = levels[current.level].questions;
+  const theoryScore = questions.filter(q => q.type === "theory").reduce((sum, q) => sum + (current.answers[q.id] === q.correct ? q.points : 0), 0);
+  const manual = questions.filter(q => q.type !== "theory");
+  const graded = manual.filter(q => current.grades[q.id] !== undefined).length;
+  const manualScore = manual.reduce((sum, q) => sum + (current.grades[q.id]?.score || 0), 0);
+  return { theoryScore, manualScore, graded, total: theoryScore + manualScore, complete: graded === manual.length };
+}
+function scoreSummary() {
+  const score = totals();
+  $("score-summary").textContent = score.complete ? `${score.total} / 100` : `${score.theoryScore} / 20 theorie`;
+  $("score-detail").textContent = score.complete
+    ? `${score.total >= 80 ? "Sterk bewijs op dit niveau" : score.total >= 60 ? "Gemengd bewijs: verdiep in het interview" : "Beperkt bewijs: bespreek hiaten en context"}. Indicatieve rubricering, geen selectieadvies. Bekijk domeinen, code en argumentatie afzonderlijk.`
+    : `${score.graded} van 6 handmatige beoordelingen ingevuld. Nog geen totaaloordeel.`;
+}
+function renderReview() {
+  show("review-view");
+  const view = $("review-view"); view.replaceChildren();
+  const level = levels[current.level];
+  view.append(node("div", `${level.title} · ${current.candidate}`, "eyebrow"), node("h1", "Ingeleverd. Tijd voor het gesprek."), node("p", `Ingeleverd op ${new Date(current.submittedAt).toLocaleString("nl-NL")}. Antwoorden zijn in de interface vergrendeld.`, "muted"));
+  const intro = node("div", undefined, "card");
+  const score = node("div", undefined, "score"); score.id = "score-summary";
+  const detail = node("p", undefined, "muted"); detail.id = "score-detail";
+  intro.append(score, detail, node("p", "Beoordelaarsweergave: onderstaande antwoordmodellen zijn zichtbaar voor iedereen met toegang tot dit scherm. Laat de kandidaat niet onbegeleid deze pagina gebruiken. Een kandidaatdossier exporteert geen antwoordmodellen."));
+  const print = node("button", "Afdrukken / opslaan als PDF"); print.onclick = () => window.print(); intro.append(print); view.append(intro);
+  const rubric = node("div", undefined, "card");
+  rubric.append(node("h2", "Eenduidig beoordelen"), node("p", "Scoor per criterium tot het genoemde maximum: 0 = ontbreekt/onjuist, circa de helft = gedeeltelijk juist zonder voldoende uitwerking, volledig = correct en concreet onderbouwd. Tel op tot het vraagmaximum; gebruik gehele punten. Accepteer gelijkwaardige oplossingen. Noteer bewijs en vervolgvragen, geen persoonskenmerken."));
+  view.append(rubric);
+  for (const [i, question] of level.questions.entries()) {
+    const item = node("article", undefined, "card");
+    item.append(node("div", `${i + 1} · ${question.domain} · max. ${question.points}`, "eyebrow"), node("h2", question.title), node("p", question.prompt));
+    const answer = current.answers[question.id];
+    item.append(node("h3", "Antwoord kandidaat"), node("pre", question.type === "theory" ? (question.choices[answer] ?? "Niet beantwoord") : (answer?.trim() || "Niet beantwoord"), "review-answer"));
+    const model = node("details"); model.append(node("summary", "Antwoordmodel & beoordelingscriteria"));
+    if (question.type === "theory") {
+      const correct = answer === question.correct;
+      item.append(node("p", `${correct ? "Correct" : "Niet correct / onbeantwoord"} · ${correct ? question.points : 0} / ${question.points} punten`, "pill"));
+      model.append(node("p", "Juiste antwoord: " + question.choices[question.correct]), node("p", question.explanation));
+    } else {
+      const list = node("ul"); question.criteria.forEach(criterion => list.append(node("li", criterion)));
+      model.append(list, node("pre", question.model, "review-answer"));
+    }
+    item.append(model);
+    if (question.type !== "theory") {
+      const label = node("label", `Score (0–${question.points})`); label.htmlFor = "grade-" + question.id;
+      const grade = document.createElement("input"); grade.type = "number"; grade.id = label.htmlFor; grade.min = "0"; grade.max = String(question.points); grade.step = "1"; grade.placeholder = "—";
+      const feedbackLabel = node("label", "Onderbouwing / vervolgvragen"); feedbackLabel.htmlFor = "feedback-" + question.id;
+      const feedback = document.createElement("textarea"); feedback.id = feedbackLabel.htmlFor; feedback.maxLength = 10000;
+      const stored = current.grades[question.id];
+      grade.value = stored ? String(stored.score) : ""; feedback.value = stored?.feedback || "";
+      const update = () => {
+        if (grade.value === "") { delete current.grades[question.id]; }
+        else {
+          const value = Number(grade.value);
+          if (!Number.isInteger(value) || value < 0 || value > question.points) { grade.setCustomValidity("Vul gehele punten binnen het maximum in."); grade.reportValidity(); return; }
+          current.grades[question.id] = { score: value, feedback: feedback.value };
+        }
+        grade.setCustomValidity(""); persist(); scoreSummary();
+      };
+      grade.oninput = update; feedback.oninput = update;
+      item.append(label, grade, feedbackLabel, feedback, node("small", "Feedback wordt opgeslagen zodra er een geldige score bij deze vraag is ingevuld."));
+    }
+    view.append(item);
+  }
+  scoreSummary();
+}
+$("start-button").onclick = () => {
+  const candidate = $("candidate").value.trim();
+  if (!candidate) { message("Vul eerst een kandidaatcode in, zonder persoonsgegevens."); $("candidate").focus(); return; }
+  current = { id: crypto.randomUUID(), bankVersion: BANK_VERSION, candidate, level: selectedLevel, status: "draft", startedAt: new Date().toISOString(), submittedAt: null, answers: {}, grades: {} };
+  attempts.push(current); index = 0; persist(); if (storageAvailable && !loadFailed) message(""); renderCandidate();
+};
+$("previous").onclick = () => { if (index > 0) { index--; renderCandidate(); } };
+$("next").onclick = () => { if (index < 9) { index++; renderCandidate(); } };
+$("submit-button").onclick = () => {
+  const missing = levels[current.level].questions.filter(q => !answered(q)).length;
+  $("submit-warning").textContent = missing ? `Let op: ${missing} vragen zijn nog niet beantwoord. Toch definitief inleveren?` : "Alle vragen zijn beantwoord. Definitief inleveren?";
+  $("submit-check").hidden = false; $("submit-button").hidden = true;
+};
+$("cancel-submit").onclick = () => { $("submit-check").hidden = true; $("submit-button").hidden = false; };
+$("confirm-submit").onclick = () => {
+  current.status = "submitted"; current.submittedAt = new Date().toISOString(); persist(); renderReview();
+};
+$("home-button").onclick = () => { renderSessions(); show("home"); };
+$("export-button").onclick = () => {
+  if (!current) return;
+  const dossier = { format: "talentlab-assessment", version: 1, exportedAt: new Date().toISOString(), source: "9altitudes vacature; zelfstandig assessment", attempt: current, score: current.status === "submitted" ? totals() : null };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(dossier, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = `assessment-${current.level}-${current.id}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  message("Dossier geëxporteerd. Het bestand bevat antwoorden en eventuele feedback; bewaar het veilig.");
+};
+$("import-button").onclick = () => $("import-file").click();
+$("import-file").onchange = async event => {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    if (file.size > 2000000) throw new Error("Bestand is te groot (maximaal 2 MB).");
+    const data = JSON.parse(await file.text());
+    if (data.format !== "talentlab-assessment" || data.version !== 1) throw new Error("Onbekend exportformaat.");
+    const attempt = validateAttempt(data.attempt);
+    if (attempts.some(a => a.id === attempt.id)) throw new Error("Dit dossier bestaat al. Bestaande antwoorden worden niet overschreven.");
+    attempts.push(attempt); persist(); renderSessions(); message("Dossier geïmporteerd." + (storageAvailable && !loadFailed ? "" : " Niet lokaal opgeslagen: exporteer om te bewaren."));
+  } catch (error) { message("Importeren mislukt: " + error.message); }
+  finally { event.target.value = ""; }
+};
+setInterval(elapsed, 15000);
+renderSessions();
+</script>
+</body>
+</html>
